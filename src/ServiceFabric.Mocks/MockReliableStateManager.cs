@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Fabric;
 using System.Globalization;
@@ -10,15 +11,47 @@ using System.Threading.Tasks;
 using Microsoft.ServiceFabric.Data;
 using Microsoft.ServiceFabric.Data.Collections;
 using Microsoft.ServiceFabric.Data.Notifications;
+using System.Linq;
 
 namespace ServiceFabric.Mocks
 {
     /// <summary>
     /// Defines replica of a reliable state provider.
     /// </summary>
-    public class MockReliableStateManager : IReliableStateManagerReplica
+    public class MockReliableStateManager : IReliableStateManagerReplica2
     {
+        private int _totalTransactionInstanceCount = 0;
         private ConcurrentDictionary<Uri, IReliableState> _store = new ConcurrentDictionary<Uri, IReliableState>();
+
+        /// <summary>
+        /// Keeps all created transactions.
+        /// </summary>
+        private ConcurrentDictionary<int, MockTransaction> _allTransactions { get; } = new ConcurrentDictionary<int, MockTransaction>();
+
+        /// <summary>
+        /// Returns all created transactions ordered by instance count (asc).
+        /// </summary>
+        public IEnumerable<MockTransaction> AllTransactions => _allTransactions.Values;
+
+        /// <summary>
+        /// Gets the last known <see cref="Transaction"/>.
+        /// </summary>
+        public MockTransaction Transaction => _allTransactions[_allTransactions.Keys.Last()];
+
+        /// <summary>
+        /// Gets a bool that indicates whether the last known <see cref="Transaction"/> is set.
+        /// </summary>
+        public bool TransanctionsIsCreated => Transaction != null;
+
+        /// <summary>
+        /// Gets a bool that indicates whether the last known <see cref="Transaction"/> is committed.
+        /// </summary>
+        public bool TransactionIsCommitted => Transaction != null && Transaction.IsCommitted;
+       
+        /// <summary>
+        /// Gets a bool that indicates whether the last known <see cref="Transaction"/> is aborted.
+        /// </summary>
+        public bool TransactionIsAborted => Transaction != null && Transaction.IsAborted;
 
         /// <summary>
         /// Returns last known <see cref="ReplicaRole"/>.
@@ -40,6 +73,11 @@ namespace ServiceFabric.Mocks
         /// Called when <see cref="TriggerDataLoss"/> is called.
         /// </summary>
         public Func<CancellationToken, Task<bool>> OnDataLossAsync { set; get; }
+
+        /// <summary>
+        /// Called when <see cref="TriggerRestoreCompleted"/> is called.
+        /// </summary>
+        public Func<CancellationToken, Task> OnRestoreCompletedAsync { get; set; }
 
         public void Abort()
         {
@@ -86,7 +124,10 @@ namespace ServiceFabric.Mocks
 
         public ITransaction CreateTransaction()
         {
-            return new MockTransaction();
+            int instanceCount = Interlocked.Increment(ref _totalTransactionInstanceCount);
+            var transaction = new MockTransaction(instanceCount);
+            _allTransactions.TryAdd(transaction.InstanceCount, transaction);
+            return Transaction;
         }
 
         public IAsyncEnumerator<IReliableState> GetAsyncEnumerator()
@@ -272,6 +313,11 @@ namespace ServiceFabric.Mocks
         public Task TriggerDataLoss()
         {
             return OnDataLossAsync(CancellationToken.None);
+        }
+
+        public Task TriggerRestoreCompleted()
+        {
+            return OnRestoreCompletedAsync(CancellationToken.None);
         }
 
         private static Uri CreateUri(string name)

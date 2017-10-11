@@ -17,7 +17,7 @@ namespace ServiceFabric.Mocks.Tests.Services
         {
         }
 
-        public MyStatefulService(StatefulServiceContext serviceContext, IReliableStateManagerReplica reliableStateManagerReplica)
+        public MyStatefulService(StatefulServiceContext serviceContext, IReliableStateManagerReplica2 reliableStateManagerReplica)
             : base(serviceContext, reliableStateManagerReplica)
         {
         }
@@ -30,6 +30,17 @@ namespace ServiceFabric.Mocks.Tests.Services
             {
                 await dictionary.TryAddAsync(tx, stateName, value);
                 await tx.CommitAsync();
+            }
+        }
+
+        public async Task InsertAndAbortAsync(string stateName, Payload value)
+        {
+            var dictionary = await StateManager.GetOrAddAsync<IReliableDictionary<string, Payload>>(StateManagerDictionaryKey);
+
+            using (var tx = StateManager.CreateTransaction())
+            {
+                await dictionary.TryAddAsync(tx, stateName, value);
+                tx.Abort();
             }
         }
 

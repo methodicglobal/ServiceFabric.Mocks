@@ -1,10 +1,51 @@
 # ServiceFabric.Mocks
-ServiceFabric.Mocks contains Mock classes to enable unit testing of Actors and Services.
+ServiceFabric.Mocks contains many Mock and helper classes to facilitate and simplify unit testing of Service Fabric Actors and Services.
 
 ## Nuget package here:
 https://www.nuget.org/packages/ServiceFabric.Mocks/
 
+## Contribute!
+Contributions are most welcome:
+
+- Please upgrade the package version with a minor tick if there are no breaking changes, by changing the `<VersionPrefix>X.Y.Z</VersionPrefix>` in the [csproj file](https://github.com/loekd/ServiceFabric.Mocks/blob/master/src/ServiceFabric.Mocks/ServiceFabric.Mocks.csproj#L7) 
+- Add a line to the readme.md, stating the changes, e.g. 'upgraded to SF version x.y.z'. 
+
+Doing so will allow me to simply accept the PR, which will automatically trigger the release of a new package.
+Please also make sure all feature additions have a corresponding unit test.
+
+Or [donate](https://paypal.me/lduys/5) a cup of coffee.
+
 ## Release notes
+
+- 2.3.2-preview
+	- Merged from main
+
+- 2.3.2
+	- Merged PR by huesie, fix exception type thrown for duplicate key in `MockReliableDictionary`. Added unit tests.
+
+- 2.3.1
+	- Merged PR by Izzmo, adding a list of past Transactions to the `MockReliableStateManager`. Added unit tests
+
+- 2.3.0
+	- Merged PR by dotnetgator, upgrading to SF 2.8.211
+
+- 2.2.4
+	- Added `InvokeOnPreActorMethodAsync` & `InvokeOnPostActorMethodAsync` on `ActorBaseExtensions`, requested by JefSchraag.
+
+- 2.2.4
+	- Fixed `MockActorStateManager` issue, when calling `SetStateAsync` with different types for T. Found by samneirinck.
+
+- 2.2.3
+	- Added `MockConfigurationPackage` to mock service configuration for CharlesZhong
+
+- 2.2.2
+	- Upgraded nuget packages (SF 2.7.198)
+
+- 2.2.1
+	- Allow MockActorServiceFactory to create several actors
+
+- 2.2.0
+	- Upgraded nuget packages (SF 2.6.220, MSTest 1.1.18)
 
 - 2.1.0
 	- Upgraded nuget packages (SF 2.6.210)
@@ -629,4 +670,39 @@ var customActorService = new AnotherCustomActorService(dummy, context, ActorType
 var actor = customActorService.Activate<OnActivateActor>(new ActorId(123L));
 Assert.IsInstanceOfType(actor, typeof(OnActivateActor));
 Assert.AreEqual(123L, actor.Id.GetLongId());
+```
+
+#### Testing service configuration
+
+To inject a configuration section into the MockCodePackageActivationContext, you can use this code:
+
+```
+[TestClass]
+    public class ConfigurationPackageTests
+    {
+        [TestMethod]
+        public void ConfigurationPackageAtMockCodePackageActivationContextTest()
+        {
+            //build ConfigurationSectionCollection
+            var configSections = new ConfigurationSectionCollection();
+
+            //Build ConfigurationSettings
+            var configSettings = CreateConfigurationSettings(configSections);
+
+            //add one ConfigurationSection
+            ConfigurationSection configSection = CreateConfigurationSection(nameof(configSection.Name));
+            configSections.Add(configSection);
+
+            //add one Parameters entry
+            ConfigurationProperty parameter = CreateConfigurationSectionParameters(nameof(parameter.Name), nameof(parameter.Value));
+            configSection.Parameters.Add(parameter);
+            
+            //Build ConfigurationPackage
+            ConfigurationPackage configPackage = CreateConfigurationPackage(configSettings, nameof(configPackage.Path));
+	    
+	    [..]
+	    }
+	 }
+}
+	 
 ```

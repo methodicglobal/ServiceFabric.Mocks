@@ -75,7 +75,7 @@ namespace ServiceFabric.Mocks
 
         public Func<CancellationToken, Task<bool>> OnDataLossAsync { get; set; }
 
-        
+        public Func<CancellationToken, Task> OnRestoreCompletedAsync { get; set; }
 
         public Task ActorActivatedAsync(ActorId actorId, CancellationToken cancellationToken = new CancellationToken())
         {
@@ -194,6 +194,17 @@ namespace ServiceFabric.Mocks
         public Task<IActorReminderCollection> LoadRemindersAsync(CancellationToken cancellationToken = new CancellationToken())
         {
             return Task.FromResult<IActorReminderCollection>(_reminders);
+        }
+
+        public async Task DeleteRemindersAsync(IReadOnlyDictionary<ActorId, IReadOnlyCollection<string>> reminderNames, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            foreach (var reminder in reminderNames)
+            {
+                foreach (var reminderName in reminder.Value)
+                {
+                    await DeleteReminderAsync(reminder.Key, reminderName, cancellationToken);
+                }
+            }
         }
     }
 }

@@ -93,7 +93,8 @@ namespace ServiceFabric.Mocks
 
         public DataPackage DataPackage { get; set; }
         public List<string> DataPackageNames { get; set; }
-        public KeyedCollection<string, EndpointResourceDescription> EndpointResourceDescriptions { get; set; }
+
+        public KeyedCollection<string, EndpointResourceDescription> EndpointResourceDescriptions { get; set; } = new MockConfigurationPackage.EndpointResourceDescriptionCollection();
         public List<HealthInformation> HealthInformations { get; set; } = new List<HealthInformation>();
         public string LogDirectory { get; set; }
 

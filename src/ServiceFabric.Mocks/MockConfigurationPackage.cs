@@ -95,5 +95,13 @@ namespace ServiceFabric.Mocks
                 return item.Name;
             }
         }
+
+        public class EndpointResourceDescriptionCollection : KeyedCollection<string, EndpointResourceDescription>
+        {
+            protected override string GetKeyForItem(EndpointResourceDescription item)
+            {
+                return item.Name;
+            }
+        }
     }
 }

@@ -1,7 +1,10 @@
-﻿using Microsoft.ServiceFabric.Data.Collections;
+﻿using Microsoft.ServiceFabric.Data;
+using Microsoft.ServiceFabric.Data.Collections;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using ServiceFabric.Mocks.ReliableCollections;
 using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Threading;
 using System.Threading.Tasks;
 // ReSharper disable PossibleInvalidOperationException
@@ -258,6 +261,154 @@ namespace ServiceFabric.Mocks.Tests.TransactionTests
             Assert.IsTrue(resultB.HasValue);
             Assert.AreEqual(AcquireResult.Owned, resultA.Value);
             Assert.AreEqual(AcquireResult.Denied, resultB.Value);
+        }
+    }
+
+    [TestClass]
+    public class TestDeadLock
+    {
+        public class Counter
+        {
+            private IReliableStateManager stateManager;
+            private const string counterName = "MyCounter";
+            public Counter(IReliableStateManager stateManager)
+            {
+                this.stateManager = stateManager;
+            }
+
+            public async Task<IDictionary<uint, uint>> GetAsync(ITransaction tx, string objectKey)
+            {
+                var graphCounter =
+                    await this.stateManager.GetOrAddAsync<IReliableDictionary<string, ImmutableDictionary<uint, uint>>>(counterName);
+                ConditionalValue<ImmutableDictionary<uint, uint>> counterContainer = await graphCounter.TryGetValueAsync(tx, objectKey);
+                return counterContainer.HasValue ? counterContainer.Value : ImmutableDictionary<uint, uint>.Empty;
+            }
+
+            /// <inheritdoc cref="IGraphCounter.GetAsync(ITransaction, string, Counter)" />
+            public async Task<uint> GetAsync(ITransaction tx, string objectKey, uint counter)
+            {
+                IDictionary<uint, uint> counterDictionary = await this.GetAsync(tx, objectKey);
+                return counterDictionary.TryGetValue(counter, out uint counterValue) ? counterValue : 0;
+            }
+
+            public async Task IncrementAsync(ITransaction tx, string objectKey, uint counter, uint count = 1)
+            {
+                var graphCounter =
+                    await this.stateManager.GetOrAddAsync<IReliableDictionary<string, ImmutableDictionary<uint, uint>>>(counterName);
+                ConditionalValue<ImmutableDictionary<uint, uint>> counterDictionaryContainer = await graphCounter.TryGetValueAsync(tx, objectKey, LockMode.Update);
+                ImmutableDictionary<uint, uint> counterDictionary;
+                if (counterDictionaryContainer.HasValue)
+                {
+                    counterDictionary = counterDictionaryContainer.Value;
+                    if (counterDictionary.TryGetValue(counter, out uint value))
+                    {
+                        counterDictionary = counterDictionary.SetItem(counter, value + count);
+                    }
+                    else
+                    {
+                        counterDictionary = counterDictionary.Add(counter, count);
+                    }
+                }
+                else
+                {
+                    counterDictionary = ImmutableDictionary<uint, uint>.Empty.Add(counter, count);
+                }
+
+                await graphCounter.SetAsync(tx, objectKey, counterDictionary);
+            }
+        }
+
+        /// <summary>
+        /// StateManager mock.
+        /// </summary>
+        private MockReliableStateManager mockStateManager;
+
+        /// <summary>
+        /// The graph counters dictionary
+        /// </summary>
+        private System.Collections.Generic.Dictionary<uint, Counter> counters;
+
+        /// <summary>
+        /// The transaction
+        /// </summary>
+        private ITransaction _tx;
+
+        /// <summary>
+        /// The object key
+        /// </summary>
+        private string objectKey;
+
+        [TestInitialize]
+        public Task TestInitialize()
+        {
+            this.mockStateManager = new MockReliableStateManager();
+            var usersGraphCounter = new Counter(this.mockStateManager);
+            var groupsGraphCounter = new Counter(this.mockStateManager);
+            this._tx = this.mockStateManager.CreateTransaction();
+            this.objectKey = Guid.NewGuid().ToString();
+            this.counters = new System.Collections.Generic.Dictionary<uint, Counter>()
+            {
+                { 1, usersGraphCounter },
+                { 2, usersGraphCounter },
+                { 3, usersGraphCounter },
+                { 4, groupsGraphCounter }
+            };
+            return Task.FromResult(true);
+        }
+
+        [TestMethod]
+        public async Task TestIncrement()
+        {
+            foreach (KeyValuePair<uint, Counter> kv in this.counters)
+            {
+                uint counter = kv.Key;
+                Counter graphCounter = kv.Value;
+                uint returnedValue = await graphCounter.GetAsync(this._tx, this.objectKey, counter);
+                Assert.AreEqual(0u, returnedValue);
+                await graphCounter.IncrementAsync(this._tx, this.objectKey, counter, 1);
+                returnedValue = await graphCounter.GetAsync(this._tx, this.objectKey, counter);
+                Assert.AreEqual(1u, returnedValue);
+                await graphCounter.IncrementAsync(this._tx, this.objectKey, counter, 100);
+                returnedValue = await graphCounter.GetAsync(this._tx, this.objectKey, counter);
+                Assert.AreEqual(101u, returnedValue);
+
+                await _tx.CommitAsync();
+
+                // Now do the multi threading confirm it is safe
+                const int range = 100;
+                var tasks = new List<Task>();
+                using (var ctk = new CancellationTokenSource(TimeSpan.FromMinutes(1)))
+                {
+                    for (int i = 0; i < range; i++)
+                    {
+                        int i2 = i;
+                        
+                        Task t = Task.Run(
+                            async () =>
+                            {
+                                try
+                                {
+                                    using (var tx = this.mockStateManager.CreateTransaction())
+                                    {
+                                        await graphCounter.IncrementAsync(tx, this.objectKey, counter, 1);
+                                        await tx.CommitAsync();
+                                    }
+                                }
+                                catch (Exception e)
+                                {
+                                    Console.WriteLine($"iteration {i2} - error{e.Message}");
+                                    throw;
+                                }
+                            }, ctk.Token);
+                        tasks.Add(t);
+                    }
+
+                    await Task.WhenAll(tasks.ToArray());
+                }
+                this._tx = this.mockStateManager.CreateTransaction();
+                returnedValue = await graphCounter.GetAsync(this._tx, this.objectKey, counter);
+                Assert.AreEqual(201u, returnedValue);
+            }
         }
     }
 }

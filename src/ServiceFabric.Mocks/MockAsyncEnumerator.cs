@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿//using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.ServiceFabric.Data;
@@ -11,14 +11,14 @@ namespace ServiceFabric.Mocks
     /// <returns>An <cref name="AsyncEnumerator" /> that can be used to asynchronously iterate through the collection.</returns>
     internal class MockAsyncEnumerator<T> : IAsyncEnumerator<T>
     {
-        private readonly IEnumerator<T> _source;
+        private readonly System.Collections.Generic.IEnumerator<T> _source;
 
-        public MockAsyncEnumerator(IEnumerator<T> enumerator)
+        public MockAsyncEnumerator(System.Collections.Generic.IEnumerator<T> enumerator)
         {
             _source = enumerator;
         }
 
-        public MockAsyncEnumerator(IEnumerable<T> enumerable)
+        public MockAsyncEnumerator(System.Collections.Generic.IEnumerable<T> enumerable)
         {
             _source = enumerable.GetEnumerator();
         }

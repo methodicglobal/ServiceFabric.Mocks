@@ -11,7 +11,7 @@ namespace ServiceFabric.Mocks.Tests.ServiceProxyTests
         {
             var proxy = new MockServiceProxy<MyStatelessService>();
             Assert.IsNotNull(proxy);
-            Assert.IsNotNull(proxy.GetType().GetProperty("ServicePartitionClient"));
+            //Assert.IsNotNull(proxy.GetType().GetProperty("ServicePartitionClient"));
             Assert.IsNotNull(proxy.GetType().GetProperty("ServicePartitionClient2"));
         }
     }

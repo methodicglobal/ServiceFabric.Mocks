@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿//using System.Collections.Generic;
 using Microsoft.ServiceFabric.Data;
 
 namespace ServiceFabric.Mocks
@@ -9,10 +9,10 @@ namespace ServiceFabric.Mocks
     /// <typeparam name="T"></typeparam>
     internal class MockAsyncEnumerable<T> : IAsyncEnumerable<T>
     {
-        private readonly IEnumerable<T> _source;
+        private readonly System.Collections.Generic.IEnumerable<T> _source;
 
         /// <inheritdoc />
-        public MockAsyncEnumerable(IEnumerable<T> source)
+        public MockAsyncEnumerable(System.Collections.Generic.IEnumerable<T> source)
         {
             _source = source;
         }

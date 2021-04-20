@@ -1,17 +1,16 @@
-﻿namespace ServiceFabric.Mocks.ReliableCollections
+﻿using Microsoft.ServiceFabric.Data;
+using Microsoft.ServiceFabric.Data.Collections;
+
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace ServiceFabric.Mocks.ReliableCollections
 {
-    using Microsoft.ServiceFabric.Data;
-    using Microsoft.ServiceFabric.Data.Collections;
-    using System;
-    using System.Collections.Concurrent;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Runtime.Serialization.Formatters.Binary;
-    using System.Threading;
-    using System.Threading.Tasks;
-
-
-
     /// <summary>
     /// Implements the core methods of IReliableDictionary, but does not require TKey to be IComparable or IEquatable.
     /// </summary>
@@ -56,8 +55,11 @@
         /// <param name="stream">Source Stream</param>
         public void Deserialize(Stream stream)
         {
-            var formatter = new BinaryFormatter();
-            Dictionary = (ConcurrentDictionary<TKey, TValue>)formatter.Deserialize(stream);
+            using (var textReader = new StreamReader(stream, System.Text.Encoding.UTF8))
+			{
+                var data = textReader.ReadToEnd();
+                Dictionary = System.Text.Json.JsonSerializer.Deserialize<ConcurrentDictionary<TKey, TValue>>(data);
+			}
         }
 
         /// <summary>
@@ -66,8 +68,10 @@
         /// <param name="stream">Target Stream</param>
         public void Serialize(Stream stream)
         {
-            var formatter = new BinaryFormatter();
-            formatter.Serialize(stream, Dictionary);
+            using (var writer = new System.Text.Json.Utf8JsonWriter(stream))
+            {
+                System.Text.Json.JsonSerializer.Serialize(writer, Dictionary);
+            }
         }
 
         /// <summary>

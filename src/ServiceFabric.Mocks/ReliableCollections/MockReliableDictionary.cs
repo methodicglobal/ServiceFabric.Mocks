@@ -1,13 +1,17 @@
-﻿namespace ServiceFabric.Mocks.ReliableCollections
+﻿using Microsoft.ServiceFabric.Data;
+using Microsoft.ServiceFabric.Data.Collections;
+using Microsoft.ServiceFabric.Data.Notifications;
+
+using System;
+//using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+
+
+namespace ServiceFabric.Mocks.ReliableCollections
 {
-    using Microsoft.ServiceFabric.Data;
-    using Microsoft.ServiceFabric.Data.Collections;
-    using Microsoft.ServiceFabric.Data.Notifications;
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Threading;
-    using System.Threading.Tasks;
+    
 
     /// <summary>
     /// Implements IReliableDictionary.
@@ -112,19 +116,19 @@
         #endregion
 
         #region CreateEnumerableAsync
-        public Task<IAsyncEnumerable<KeyValuePair<TKey, TValue>>> CreateEnumerableAsync(ITransaction tx)
+        public Task<IAsyncEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>> CreateEnumerableAsync(ITransaction tx)
         {
             return CreateEnumerableAsync(tx, EnumerationMode.Unordered);
         }
 
-        public Task<IAsyncEnumerable<KeyValuePair<TKey, TValue>>> CreateEnumerableAsync(ITransaction tx, EnumerationMode enumerationMode)
+        public Task<IAsyncEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>> CreateEnumerableAsync(ITransaction tx, EnumerationMode enumerationMode)
         {
             return CreateEnumerableAsync(tx, null, enumerationMode);
         }
 
-        public async Task<IAsyncEnumerable<KeyValuePair<TKey, TValue>>> CreateEnumerableAsync(ITransaction tx, Func<TKey, bool> filter, EnumerationMode enumerationMode)
+        public async Task<IAsyncEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>> CreateEnumerableAsync(ITransaction tx, Func<TKey, bool> filter, EnumerationMode enumerationMode)
         {
-            List<TKey> keys = new List<TKey>();
+            var keys = new System.Collections.Generic.List<TKey>();
 
             try
             {
@@ -144,7 +148,7 @@
                     keys.Sort();
                 }
 
-                IAsyncEnumerable<KeyValuePair<TKey, TValue>> result = new MockAsyncEnumerable<KeyValuePair<TKey, TValue>>(keys.Select(k => new KeyValuePair<TKey, TValue>(k, Dictionary[k])));
+                IAsyncEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> result = new MockAsyncEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>(keys.Select(k => new System.Collections.Generic.KeyValuePair<TKey, TValue>(k, Dictionary[k])));
                 return result;
             }
             catch
@@ -173,7 +177,7 @@
 
         public async Task<IAsyncEnumerable<TKey>> CreateKeyEnumerableAsync(ITransaction tx, EnumerationMode enumerationMode, TimeSpan timeout, CancellationToken cancellationToken)
         {
-            List<TKey> keys = new List<TKey>();
+            var keys = new System.Collections.Generic.List<TKey>();
 
             try
             {

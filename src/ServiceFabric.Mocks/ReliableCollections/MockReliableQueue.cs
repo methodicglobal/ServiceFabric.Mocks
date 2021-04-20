@@ -1,13 +1,16 @@
 ﻿using System.Collections;
 
+using Microsoft.ServiceFabric.Data;
+using Microsoft.ServiceFabric.Data.Collections;
+using System;
+//using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+
+
 namespace ServiceFabric.Mocks.ReliableCollections
 {
-    using Microsoft.ServiceFabric.Data;
-    using Microsoft.ServiceFabric.Data.Collections;
-    using System;
-    using System.Collections.Generic;
-    using System.Threading;
-    using System.Threading.Tasks;
+    
 
     /// <summary>
     /// Implements IReliableQueue.
@@ -107,9 +110,9 @@ namespace ServiceFabric.Mocks.ReliableCollections
         }
     }
 
-    internal class IndexedQueue<T> : IEnumerable<T>
-    {
-        private readonly LinkedList<T> _inner = new LinkedList<T>();
+    internal class IndexedQueue<T> : System.Collections.Generic.IEnumerable<T>
+	{
+        private readonly System.Collections.Generic.LinkedList<T> _inner = new System.Collections.Generic.LinkedList<T>();
         public long Count => _inner.Count;
 
         public void AddToFront(T element)
@@ -137,7 +140,7 @@ namespace ServiceFabric.Mocks.ReliableCollections
         }
 
         /// <inheritdoc />
-        public IEnumerator<T> GetEnumerator()
+        public System.Collections.Generic.IEnumerator<T> GetEnumerator()
         {
             return _inner.GetEnumerator();
         }

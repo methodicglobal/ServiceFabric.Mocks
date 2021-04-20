@@ -1,0 +1,46 @@
+trigger:
+  - master
+pr: none
+
+variables:
+  buildConfiguration: Release
+  projectPaths: src/**/*.csproj
+  testProjectPaths: 'test/**/*[Tt]ests/*.csproj'
+steps:
+  - task: DotNetCoreCLI@2
+    displayName: Test
+    inputs:
+      command: test
+      projects: $(testProjectPaths)
+      arguments: '--configuration $(BuildConfiguration)'
+  - task: DotNetCoreCLI@2
+    displayName: Restore
+    inputs:
+      command: restore
+      projects: $(projectPaths)
+  - task: DotNetCoreCLI@2
+    displayName: Build
+    inputs:
+      projects: $(projectPaths)
+      arguments: '--configuration $(buildConfiguration)'
+  - task: DotNetCoreCLI@2
+    displayName: Pack
+    inputs:
+      command: pack
+      packagesToPack: $(projectPaths)
+      nobuild: true
+  - task: NuGetToolInstaller@1
+    displayName: Use NuGet5.9.1
+    inputs:
+      versionSpec: 5.9.1
+  - task: NuGetCommand@2
+    displayName: NuGet push
+    inputs:
+      command: 'push'
+      packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'
+      nuGetFeedType: 'internal'
+      publishVstsFeed: '94e51229-bb21-4d05-8ec7-827b036f86cc'
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Artifact
+    inputs:
+      PathtoPublish: $(build.artifactstagingdirectory)

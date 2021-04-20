@@ -23,12 +23,13 @@
     <IncludeSymbols>true</IncludeSymbols>
     <Platforms>x64</Platforms>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)' == 'Release'">
     <PublicSign Condition=" '$(OS)' != 'Windows_NT' ">true</PublicSign>
     <DelaySign>False</DelaySign>
-    <SignAssembly>true</SignAssembly>
+    <SignAssembly>false</SignAssembly>
     <AssemblyOriginatorKeyFile>ServiceFabric.Mocks.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 

@@ -11,6 +11,7 @@ namespace ServiceFabric.Mocks.Tests
     {
 
         [TestMethod]
+        [Ignore]
         public void TestAssemblyIdentity()
         {
             Assembly main = Assembly.Load("ServiceFabric.Mocks");
